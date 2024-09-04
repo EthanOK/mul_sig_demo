@@ -8,6 +8,8 @@ import {
   SystemProgram,
   NONCE_ACCOUNT_LENGTH,
   NonceAccount,
+  TransactionMessage,
+  VersionedTransaction,
 } from "@solana/web3.js";
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
 import { backSigner_publicKey, sendBack } from "./back";
@@ -21,6 +23,8 @@ describe("mul_sig_demo", () => {
   const program = anchor.workspace.MulSigDemo as Program<MulSigDemo>;
 
   const provider = anchor.getProvider();
+
+  const connection = provider.connection;
 
   const payer = Keypair.generate();
 
@@ -139,13 +143,9 @@ describe("mul_sig_demo", () => {
       bs58.decode(serializedTransaction_backSign)
     );
 
-    // transaction__backSign = await wallet.signTransaction(transaction__backSign);
-
     transaction__backSign.partialSign(payer);
 
-    // console.log("transaction__backSign:", transaction__backSign);
-
-    await new Promise((resolve) => setTimeout(resolve, 10000));
+    // await new Promise((resolve) => setTimeout(resolve, 10000));
 
     const tx = await provider.connection.sendRawTransaction(
       transaction__backSign.serialize()
@@ -153,12 +153,55 @@ describe("mul_sig_demo", () => {
     await provider.connection.confirmTransaction(tx);
     console.log("tx:", tx);
 
-
     const accountInfo_after = await provider.connection.getAccountInfo(
       nonceAccount.publicKey
     );
-    const nonceAccount_parsed_after = NonceAccount.fromAccountData(accountInfo_after.data);
+    const nonceAccount_parsed_after = NonceAccount.fromAccountData(
+      accountInfo_after.data
+    );
 
     console.log(nonceAccount_parsed_after);
   });
+
+  it("Is Send VersionedTransaction", async () => {
+    let { blockhash } = await connection.getLatestBlockhash();
+
+    const transaction = new Transaction({
+      feePayer: provider.publicKey,
+      recentBlockhash: blockhash,
+    }).add(
+      SystemProgram.transfer({
+        fromPubkey: provider.publicKey,
+        toPubkey: payer.publicKey,
+        lamports: 10086,
+      })
+    );
+
+    const versionedTransaction = toVersionedTransaction(transaction);
+
+    const tx = await provider.sendAndConfirm(versionedTransaction);
+
+    // versionedTransaction.sign([payer]);
+    // const tx = await connection.sendTransaction(versionedTransaction);
+
+    await connection.confirmTransaction(tx);
+    console.log("tx:", tx);
+  });
 });
+
+function toVersionedTransaction(transaction: Transaction) {
+  if (!transaction.recentBlockhash) {
+    throw new Error("Transaction recentBlockhash required");
+  }
+  if (!transaction.feePayer) {
+    throw new Error("Transaction feePayer required");
+  }
+  const messageV0 = new TransactionMessage({
+    payerKey: transaction.feePayer,
+    instructions: transaction.instructions,
+    recentBlockhash: transaction.recentBlockhash,
+  }).compileToV0Message();
+
+  const transaction_Versioned = new VersionedTransaction(messageV0);
+  return transaction_Versioned;
+}
