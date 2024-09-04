@@ -2,7 +2,13 @@
   "license": "ISC",
   "scripts": {
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
-    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
+    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
+    "test": "anchor test",
+    "1. download metadata_program": "solana program dump -u m metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s metadata.so",
+    "2. local network": "solana-test-validator --bpf-program metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s metadata.so --reset",
+    "3. test-local": "anchor test --skip-local-validator",
+    "4. deploy idl": "anchor idl init --filepath target/idl/open_social.json ospPaFn5JvovJ8NYsPmpP19EZjkMBYaNGucFiiRMpAe",
+    "5. ": "open https://solscan.io/?cluster=custom&customUrl=http://localhost:8899"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.30.1",
