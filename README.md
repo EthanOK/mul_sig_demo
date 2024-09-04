@@ -1,4 +1,4 @@
-# Solana Off-Chain Signature
+# Solana Offline Signature
 
 ## partial sign
 
